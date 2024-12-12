@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
@@ -31,4 +32,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Tìm kiếm theo tên hoặc category
     @Query("SELECT p FROM Product p WHERE LOWER(p.name) LIKE %:keyword% OR LOWER(p.category) LIKE %:keyword%")
     Page<Product> search(@Param("keyword") String keyword, Pageable pageable);
+    
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.seller WHERE p.id = :id")
+    Optional<Product> findByIdWithSeller(@Param("id") Long id);
 }

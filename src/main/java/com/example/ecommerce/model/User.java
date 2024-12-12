@@ -3,6 +3,7 @@ package com.example.ecommerce.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import com.example.ecommerce.model.enums.Role;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Data
 @Entity
@@ -20,6 +21,7 @@ public class User {
     private String password;
 
     @Column(nullable = false)
+    @JsonProperty("username")
     private String username;
 
     private String phone;
@@ -29,4 +31,8 @@ public class User {
     private Role role = Role.CUSTOMER;
 
     private boolean enabled = true;
+
+    public String getUsername() {
+        return username;
+    }
 }

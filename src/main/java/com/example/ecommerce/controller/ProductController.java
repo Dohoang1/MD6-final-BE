@@ -1,6 +1,9 @@
 package com.example.ecommerce.controller;
 
 import com.example.ecommerce.model.Product;
+import com.example.ecommerce.model.User;
+import com.example.ecommerce.repository.UserRepository;
+import com.example.ecommerce.security.UserPrincipal;
 import com.example.ecommerce.service.FileStorageService;
 import com.example.ecommerce.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,9 +19,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.core.Authentication;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -37,6 +43,9 @@ public class ProductController {
     @Autowired
     private FileStorageService fileStorageService;
 
+    @Autowired
+    private UserRepository userRepository;
+
     // Lấy tất cả sản phẩm
     @GetMapping
     public ResponseEntity<List<Product>> getAllProducts() {
@@ -50,14 +59,30 @@ public class ProductController {
                                            @RequestParam("price") double price,
                                            @RequestParam("quantity") int quantity,
                                            @RequestParam("description") String description,
-                                           @RequestParam("category") String category) {
+                                           @RequestParam("category") String category,
+                                           Authentication authentication) {
         try {
+            // Debug log
+            System.out.println("Authentication: " + authentication);
+            
+            if (authentication == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+            }
+
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            User seller = userRepository.findById(userPrincipal.getId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            // Debug log
+            System.out.println("Seller found: " + seller.getUsername());
+
             Product product = new Product();
             product.setName(name);
             product.setPrice(price);
             product.setQuantity(quantity);
             product.setDescription(description);
             product.setCategory(category);
+            product.setSeller(seller); // Set seller explicitly
 
             List<String> imageUrls = new ArrayList<>();
             for (MultipartFile file : files) {
@@ -67,8 +92,13 @@ public class ProductController {
             product.setImageUrls(imageUrls);
 
             Product savedProduct = productService.save(product);
+
+            // Debug log
+            System.out.println("Saved product with seller: " + savedProduct.getSeller().getUsername());
+
             return ResponseEntity.ok(savedProduct);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error creating product: " + e.getMessage());
         }
@@ -77,12 +107,40 @@ public class ProductController {
     // API lấy chi tiết sản phẩm theo ID
     @GetMapping("/{id}")
     public ResponseEntity<?> getProductById(@PathVariable Long id) {
-        Optional<Product> product = productService.findById(id);
-        if (product.isPresent()) {
-            return ResponseEntity.ok(product.get());
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Không tìm thấy sản phẩm với ID: " + id);
+        try {
+            Optional<Product> productOpt = productService.findByIdWithSeller(id);
+            if (productOpt.isPresent()) {
+                Product product = productOpt.get();
+                
+                // Debug log
+                System.out.println("Found product: " + product.getId());
+                if (product.getSeller() != null) {
+                    System.out.println("Seller: " + product.getSeller().getUsername());
+                } else {
+                    System.out.println("No seller found for product");
+                }
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("id", product.getId());
+                response.put("name", product.getName());
+                response.put("price", product.getPrice());
+                response.put("quantity", product.getQuantity());
+                response.put("description", product.getDescription());
+                response.put("category", product.getCategory());
+                response.put("imageUrls", product.getImageUrls());
+                response.put("sellerUsername", product.getSeller() != null ? 
+                            product.getSeller().getUsername() : "Không có thông tin người bán");
+
+                // Debug log
+                System.out.println("Response: " + response);
+
+                return ResponseEntity.ok(response);
+            }
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
         }
     }
 

@@ -74,4 +74,9 @@ public class ProductServiceImpl implements ProductService {
         log.info("Searching with keyword: '{}' in both name and category", keyword);
         return productRepository.search(keyword.toLowerCase(), pageable);
     }
+
+    @Override
+    public Optional<Product> findByIdWithSeller(Long id) {
+        return productRepository.findByIdWithSeller(id);
+    }
 }

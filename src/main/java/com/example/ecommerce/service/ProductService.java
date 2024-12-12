@@ -11,6 +11,7 @@ public interface ProductService {
     List<Product> findAll();
     Page<Product> findAll(Pageable pageable);
     Optional<Product> findById(Long id);
+    Optional<Product> findByIdWithSeller(Long id);
     Product save(Product product);
     void deleteById(Long id);
     

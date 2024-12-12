@@ -6,6 +6,7 @@ import com.example.ecommerce.payload.LoginRequest;
 import com.example.ecommerce.payload.MessageResponse;
 import com.example.ecommerce.repository.UserRepository;
 import com.example.ecommerce.security.JwtTokenProvider;
+import com.example.ecommerce.security.UserPrincipal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,7 +97,8 @@ public class AuthController {
                 
                 // Validate role
                 if (!user.getRole().equals(Role.CUSTOMER) && 
-                    !user.getRole().equals(Role.PROVIDER)) {
+                    !user.getRole().equals(Role.PROVIDER) &&
+                    !user.getRole().equals(Role.SALESPERSON)) {
                     return ResponseEntity
                         .badRequest()
                         .body(new MessageResponse("Role không hợp lệ!"));
@@ -121,6 +123,53 @@ public class AuthController {
             return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new MessageResponse("Lỗi đăng ký: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/admin/create-user")
+    public ResponseEntity<?> createUser(@RequestBody User user) {
+        try {
+            // Kiểm tra nếu người dùng hiện tại là admin
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            User currentUser = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+            if (!currentUser.getRole().equals(Role.ADMIN)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new MessageResponse("Access denied"));
+            }
+
+            // Kiểm tra email đã tồn tại chưa
+            if (userRepository.existsByEmail(user.getEmail())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new MessageResponse("Email đã được sử dụng!"));
+            }
+
+            // Mã hóa mật khẩu
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+            // Đảm bảo role được set đúng
+            if (user.getRole() == null) {
+                user.setRole(Role.CUSTOMER);
+            }
+
+            // Validate role
+            if (!user.getRole().equals(Role.CUSTOMER) && 
+                !user.getRole().equals(Role.PROVIDER) &&
+                !user.getRole().equals(Role.SALESPERSON)) {
+                return ResponseEntity.badRequest()
+                    .body(new MessageResponse("Role không hợp lệ!"));
+            }
+
+            // Lưu user mới
+            User savedUser = userRepository.save(user);
+            savedUser.setPassword(null); // Xóa mật khẩu trước khi trả về response
+
+            return ResponseEntity.ok(savedUser);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new MessageResponse("Lỗi tạo tài khoản: " + e.getMessage()));
         }
     }
 }
