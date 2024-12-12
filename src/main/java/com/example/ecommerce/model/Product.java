@@ -2,6 +2,7 @@ package com.example.ecommerce.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,4 +42,17 @@ public class Product {
     )
     @Column(name = "image_url")
     private List<String> imageUrls = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "seller_id", nullable = false)
+    private User seller;
+
+    public User getSeller() {
+        return seller;
+    }
+
+    @JsonProperty("sellerUsername")
+    public String getSellerUsername() {
+        return seller != null ? seller.getUsername() : null;
+    }
 }
