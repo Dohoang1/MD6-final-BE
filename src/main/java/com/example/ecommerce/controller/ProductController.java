@@ -214,7 +214,7 @@ public class ProductController {
     @GetMapping("/page")
     public ResponseEntity<Page<Product>> getProductsByPage(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id,desc") String sort,
             @RequestParam(required = false) String search) {
         
