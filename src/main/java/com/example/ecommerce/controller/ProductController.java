@@ -6,6 +6,7 @@ import com.example.ecommerce.repository.UserRepository;
 import com.example.ecommerce.security.UserPrincipal;
 import com.example.ecommerce.service.FileStorageService;
 import com.example.ecommerce.service.ProductService;
+import com.example.ecommerce.model.enums.Role;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,9 +63,6 @@ public class ProductController {
                                            @RequestParam("category") String category,
                                            Authentication authentication) {
         try {
-            // Debug log
-            System.out.println("Authentication: " + authentication);
-            
             if (authentication == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
             }
@@ -73,8 +71,10 @@ public class ProductController {
             User seller = userRepository.findById(userPrincipal.getId())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // Debug log
-            System.out.println("Seller found: " + seller.getUsername());
+            if (seller.getRole() != Role.ADMIN && seller.getRole() != Role.SALESPERSON) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Bạn không có quyền thêm sản phẩm");
+            }
 
             Product product = new Product();
             product.setName(name);
@@ -152,8 +152,22 @@ public class ProductController {
                                            @RequestParam("quantity") int quantity,
                                            @RequestParam("description") String description,
                                            @RequestParam("category") String category,
-                                           @RequestParam("existingImages") String existingImagesJson) {
+                                           @RequestParam("existingImages") String existingImagesJson,
+                                           Authentication authentication) {
         try {
+            if (authentication == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+            }
+
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            User currentUser = userRepository.findById(userPrincipal.getId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            if (currentUser.getRole() != Role.ADMIN && currentUser.getRole() != Role.SALESPERSON) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Bạn không có quyền sửa sản phẩm");
+            }
+
             Product product = productService.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
@@ -192,8 +206,21 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
+    public ResponseEntity<?> deleteProduct(@PathVariable Long id, Authentication authentication) {
         try {
+            if (authentication == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+            }
+
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            User currentUser = userRepository.findById(userPrincipal.getId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            if (currentUser.getRole() != Role.ADMIN && currentUser.getRole() != Role.SALESPERSON) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Bạn không có quyền xóa sản phẩm");
+            }
+
             Product product = productService.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
