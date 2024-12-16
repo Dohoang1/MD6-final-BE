@@ -1,6 +1,7 @@
 package com.example.ecommerce.service.impl;
 
 import com.example.ecommerce.model.Product;
+import com.example.ecommerce.model.enums.ProductStatus;
 import com.example.ecommerce.repository.ProductRepository;
 import com.example.ecommerce.service.ProductService;
 import lombok.extern.slf4j.Slf4j;
@@ -34,12 +35,6 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<Product> findByNameContaining(String name, Pageable pageable) {
-        log.info("Searching for products with name containing: '{}'", name);
-        return productRepository.findByNameContaining(name.toLowerCase(), pageable);
-    }
-
-    @Override
     public Optional<Product> findById(Long id) {
         return productRepository.findById(id);
     }
@@ -55,13 +50,19 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<Product> findByCategory(String category) {
-        return productRepository.findByCategory(category);
+    public Page<Product> findByNameContaining(String name, Pageable pageable) {
+        log.info("Searching for products with name containing: '{}'", name);
+        return productRepository.findByNameContaining(name.toLowerCase(), pageable);
     }
 
     @Override
     public List<Product> findByNameContaining(String name) {
         return productRepository.findByNameContaining(name.toLowerCase());
+    }
+
+    @Override
+    public List<Product> findByCategory(String category) {
+        return productRepository.findByCategory(category);
     }
 
     @Override
@@ -78,5 +79,22 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Optional<Product> findByIdWithSeller(Long id) {
         return productRepository.findByIdWithSeller(id);
+    }
+
+    @Override
+    public List<Product> findByStatus(ProductStatus status) {
+        return productRepository.findByStatus(status);
+    }
+
+    @Override
+    public Page<Product> findAllApproved(Pageable pageable) {
+        log.info("Finding all approved products");
+        return productRepository.findAllApproved(pageable);
+    }
+
+    @Override
+    public Page<Product> searchApproved(String term, Pageable pageable) {
+        log.info("Searching approved products with term: '{}'", term);
+        return productRepository.searchApproved(term.toLowerCase(), pageable);
     }
 }

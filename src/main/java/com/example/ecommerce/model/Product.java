@@ -1,4 +1,5 @@
 package com.example.ecommerce.model;
+import com.example.ecommerce.model.enums.ProductStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -47,6 +48,10 @@ public class Product {
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private ProductStatus status = ProductStatus.PENDING;
+
     public User getSeller() {
         return seller;
     }
@@ -54,5 +59,13 @@ public class Product {
     @JsonProperty("sellerUsername")
     public String getSellerUsername() {
         return seller != null ? seller.getUsername() : null;
+    }
+
+    public ProductStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ProductStatus status) {
+        this.status = status;
     }
 }

@@ -1,6 +1,7 @@
 package com.example.ecommerce.repository;
 
 import com.example.ecommerce.model.Product;
+import com.example.ecommerce.model.enums.ProductStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -35,4 +36,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     
     @Query("SELECT p FROM Product p LEFT JOIN FETCH p.seller WHERE p.id = :id")
     Optional<Product> findByIdWithSeller(@Param("id") Long id);
+    
+    List<Product> findByStatus(ProductStatus status);
+    
+    @Query("SELECT p FROM Product p WHERE p.status = 'APPROVED'")
+    Page<Product> findAllApproved(Pageable pageable);
+    
+    @Query("SELECT p FROM Product p WHERE p.status = 'APPROVED' AND (LOWER(p.name) LIKE %:term% OR LOWER(p.category) LIKE %:term%)")
+    Page<Product> searchApproved(@Param("term") String term, Pageable pageable);
 }
