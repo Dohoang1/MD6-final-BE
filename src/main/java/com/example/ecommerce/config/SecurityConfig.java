@@ -53,8 +53,8 @@ public class SecurityConfig implements WebMvcConfigurer {
             .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/products/register-sale").hasAuthority("PROVIDER")
             .requestMatchers(HttpMethod.POST, "/api/products/**").hasAnyAuthority("ADMIN", "SALESPERSON")
-            .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyAuthority("ADMIN", "SALESPERSON")
-            .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasAnyAuthority("ADMIN", "SALESPERSON")
+            .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyAuthority("ADMIN", "SALESPERSON", "PROVIDER")
+            .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasAnyAuthority("ADMIN", "SALESPERSON", "PROVIDER")
             .anyRequest().authenticated()
             .and()
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
