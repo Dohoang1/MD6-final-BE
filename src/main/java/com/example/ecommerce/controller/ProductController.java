@@ -113,14 +113,6 @@ public class ProductController {
             if (productOpt.isPresent()) {
                 Product product = productOpt.get();
                 
-                // Debug log
-                System.out.println("Found product: " + product.getId());
-                if (product.getSeller() != null) {
-                    System.out.println("Seller: " + product.getSeller().getUsername());
-                } else {
-                    System.out.println("No seller found for product");
-                }
-
                 Map<String, Object> response = new HashMap<>();
                 response.put("id", product.getId());
                 response.put("name", product.getName());
@@ -129,11 +121,10 @@ public class ProductController {
                 response.put("description", product.getDescription());
                 response.put("category", product.getCategory());
                 response.put("imageUrls", product.getImageUrls());
+                response.put("status", product.getStatus());
+                response.put("seller", product.getSeller());
                 response.put("sellerUsername", product.getSeller() != null ? 
                             product.getSeller().getUsername() : "Không có thông tin người bán");
-
-                // Debug log
-                System.out.println("Response: " + response);
 
                 return ResponseEntity.ok(response);
             }
@@ -164,13 +155,21 @@ public class ProductController {
             User currentUser = userRepository.findById(userPrincipal.getId())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            if (currentUser.getRole() != Role.ADMIN && currentUser.getRole() != Role.SALESPERSON) {
+            Product product = productService.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+            // Kiểm tra quyền: ADMIN, SALESPERSON có thể sửa tất cả, PROVIDER chỉ sửa được sản phẩm của mình
+            if (currentUser.getRole() == Role.PROVIDER && !product.getSeller().getId().equals(currentUser.getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Bạn không có quyền sửa sản phẩm của người khác");
+            }
+
+            if (currentUser.getRole() != Role.ADMIN && 
+                currentUser.getRole() != Role.SALESPERSON && 
+                currentUser.getRole() != Role.PROVIDER) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body("Bạn không có quyền sửa sản phẩm");
             }
-
-            Product product = productService.findById(id)
-                    .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
             // Cập nhật thông tin cơ bản
             product.setName(name);
@@ -217,13 +216,21 @@ public class ProductController {
             User currentUser = userRepository.findById(userPrincipal.getId())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            if (currentUser.getRole() != Role.ADMIN && currentUser.getRole() != Role.SALESPERSON) {
+            Product product = productService.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+            // Kiểm tra quyền: ADMIN, SALESPERSON có thể xóa tất cả, PROVIDER chỉ xóa được sản phẩm của mình
+            if (currentUser.getRole() == Role.PROVIDER && !product.getSeller().getId().equals(currentUser.getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Bạn không có quyền xóa sản phẩm của người khác");
+            }
+
+            if (currentUser.getRole() != Role.ADMIN && 
+                currentUser.getRole() != Role.SALESPERSON && 
+                currentUser.getRole() != Role.PROVIDER) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body("Bạn không có quyền xóa sản phẩm");
             }
-
-            Product product = productService.findById(id)
-                    .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
             // Xóa các file ảnh liên quan
             for (String imageUrl : product.getImageUrls()) {
