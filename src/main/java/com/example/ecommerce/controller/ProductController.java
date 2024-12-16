@@ -7,6 +7,7 @@ import com.example.ecommerce.security.UserPrincipal;
 import com.example.ecommerce.service.FileStorageService;
 import com.example.ecommerce.service.ProductService;
 import com.example.ecommerce.model.enums.Role;
+import com.example.ecommerce.model.enums.ProductStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -256,15 +257,119 @@ public class ProductController {
             Page<Product> productPage;
             if (search != null && !search.trim().isEmpty()) {
                 log.info("Searching with term: {}", search.trim());
-                productPage = productService.search(search.trim(), pageable);
+                productPage = productService.searchApproved(search.trim(), pageable);
             } else {
-                productPage = productService.findAll(pageable);
+                productPage = productService.findAllApproved(pageable);
             }
             
             return ResponseEntity.ok(productPage);
         } catch (Exception e) {
             log.error("Error processing request:", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Thêm endpoint cho provider đăng bán sản phẩm
+    @PostMapping("/register-sale")
+    public ResponseEntity<?> registerProductForSale(@RequestParam("files") List<MultipartFile> files,
+                                              @RequestParam("name") String name,
+                                              @RequestParam("price") double price,
+                                              @RequestParam("quantity") int quantity,
+                                              @RequestParam("description") String description,
+                                              @RequestParam("category") String category,
+                                              Authentication authentication) {
+        try {
+            if (authentication == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+            }
+
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            User seller = userRepository.findById(userPrincipal.getId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            if (seller.getRole() != Role.PROVIDER) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Chỉ Provider mới có thể đăng bán sản phẩm");
+            }
+
+            Product product = new Product();
+            product.setName(name);
+            product.setPrice(price);
+            product.setQuantity(quantity);
+            product.setDescription(description);
+            product.setCategory(category);
+            product.setSeller(seller);
+            product.setStatus(ProductStatus.PENDING);
+
+            List<String> imageUrls = new ArrayList<>();
+            for (MultipartFile file : files) {
+                String fileName = fileStorageService.storeFile(file);
+                imageUrls.add(fileName);
+            }
+            product.setImageUrls(imageUrls);
+
+            Product savedProduct = productService.save(product);
+            return ResponseEntity.ok(savedProduct);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error registering product: " + e.getMessage());
+        }
+    }
+
+    // Endpoint cho admin duyệt sản phẩm
+    @PutMapping("/{id}/approve")
+    public ResponseEntity<?> approveProduct(@PathVariable Long id, 
+                                      @RequestParam boolean approved,
+                                      Authentication authentication) {
+        try {
+            if (authentication == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+            }
+
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            User admin = userRepository.findById(userPrincipal.getId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            if (admin.getRole() != Role.ADMIN) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Chỉ Admin mới có thể duyệt sản phẩm");
+            }
+
+            Product product = productService.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+            product.setStatus(approved ? ProductStatus.APPROVED : ProductStatus.REJECTED);
+            Product updatedProduct = productService.save(product);
+            
+            return ResponseEntity.ok(updatedProduct);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error approving product: " + e.getMessage());
+        }
+    }
+
+    // Endpoint lấy danh sách sản phẩm chờ duyệt
+    @GetMapping("/pending")
+    public ResponseEntity<?> getPendingProducts(Authentication authentication) {
+        try {
+            if (authentication == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+            }
+
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            User user = userRepository.findById(userPrincipal.getId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            if (user.getRole() != Role.ADMIN) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Chỉ Admin mới có thể xem danh sách sản phẩm chờ duyệt");
+            }
+
+            List<Product> pendingProducts = productService.findByStatus(ProductStatus.PENDING);
+            return ResponseEntity.ok(pendingProducts);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching pending products: " + e.getMessage());
         }
     }
 }
