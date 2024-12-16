@@ -51,6 +51,7 @@ public class SecurityConfig implements WebMvcConfigurer {
             .requestMatchers("/api/auth/**").permitAll()
             .requestMatchers("/uploads/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+            .requestMatchers("/api/cart/**").authenticated()
             .requestMatchers(HttpMethod.POST, "/api/products/register-sale").hasAuthority("PROVIDER")
             .requestMatchers(HttpMethod.POST, "/api/products/**").hasAnyAuthority("ADMIN", "SALESPERSON")
             .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyAuthority("ADMIN", "SALESPERSON", "PROVIDER")
