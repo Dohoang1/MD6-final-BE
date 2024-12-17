@@ -97,4 +97,25 @@ public class ProductServiceImpl implements ProductService {
         log.info("Searching approved products with term: '{}'", term);
         return productRepository.searchApproved(term.toLowerCase(), pageable);
     }
+
+    @Override
+    public List<String> getAllCategories() {
+        return productRepository.findAllCategories();
+    }
+
+    @Override
+    public Page<Product> findByCategoryWithPaging(String category, Pageable pageable) {
+        return productRepository.findByCategoryWithPaging(category, pageable);
+    }
+
+    @Override
+    public List<String> getAllSellers() {
+        return productRepository.findAllSellers();
+    }
+
+    @Override
+    public Page<Product> findBySellerWithPaging(String seller, Pageable pageable) {
+        return productRepository.findBySellerWithPaging(seller, pageable);
+    }
+
 }

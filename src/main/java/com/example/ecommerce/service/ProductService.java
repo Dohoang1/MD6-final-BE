@@ -27,4 +27,9 @@ public interface ProductService {
     List<Product> findByStatus(ProductStatus status);
     Page<Product> findAllApproved(Pageable pageable);
     Page<Product> searchApproved(String term, Pageable pageable);
+    
+    public List<String> getAllCategories();
+    Page<Product> findByCategoryWithPaging(String category, Pageable pageable);
+    List<String> getAllSellers();
+    Page<Product> findBySellerWithPaging(String seller, Pageable pageable);
 }

@@ -247,32 +247,41 @@ public class ProductController {
 
     // Thêm endpoint mới cho phân trang
     @GetMapping("/page")
-    public ResponseEntity<Page<Product>> getProductsByPage(
+    public ResponseEntity<Page<Product>> getProductsPage(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id,desc") String sort,
-            @RequestParam(required = false) String search) {
-        
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String seller) {
         try {
-            String[] sortParams = sort.split(",");
-            String sortField = sortParams[0];
-            Sort.Direction direction = sortParams[1].equalsIgnoreCase("desc") ? 
-                Sort.Direction.DESC : Sort.Direction.ASC;
-            Sort sorting = Sort.by(direction, sortField);
-            Pageable pageable = PageRequest.of(page, size, sorting);
-            
+            Pageable pageable;
+            if (sort != null) {
+                String[] parts = sort.split(",");
+                String sortField = parts[0];
+                Sort.Direction direction = parts.length > 1 && parts[1].equalsIgnoreCase("desc") ?
+                        Sort.Direction.DESC : Sort.Direction.ASC;
+                pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+            } else {
+                pageable = PageRequest.of(page, size);
+            }
+
             Page<Product> productPage;
-            if (search != null && !search.trim().isEmpty()) {
-                log.info("Searching with term: {}", search.trim());
-                productPage = productService.searchApproved(search.trim(), pageable);
+            if (search != null && !search.isEmpty()) {
+                productPage = productService.searchApproved(search.toLowerCase(), pageable);
+            } else if (category != null && !category.isEmpty()) {
+                productPage = productService.findByCategoryWithPaging(category, pageable);
+            } else if (seller != null && !seller.isEmpty()) {
+                productPage = productService.findBySellerWithPaging(seller, pageable);
             } else {
                 productPage = productService.findAllApproved(pageable);
             }
-            
+
             return ResponseEntity.ok(productPage);
         } catch (Exception e) {
-            log.error("Error processing request:", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            log.error("Error fetching products page", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null);
         }
     }
 
@@ -378,5 +387,17 @@ public class ProductController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error fetching pending products: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/categories")
+    public ResponseEntity<List<String>> getAllCategories() {
+        List<String> categories = productService.getAllCategories();
+        return ResponseEntity.ok(categories);
+    }
+
+    @GetMapping("/sellers")
+    public ResponseEntity<List<String>> getAllSellers() {
+        List<String> sellers = productService.getAllSellers();
+        return ResponseEntity.ok(sellers);
     }
 }

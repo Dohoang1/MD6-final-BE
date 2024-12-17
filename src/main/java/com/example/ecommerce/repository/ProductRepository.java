@@ -44,4 +44,20 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     
     @Query("SELECT p FROM Product p WHERE p.status = 'APPROVED' AND (LOWER(p.name) LIKE %:term% OR LOWER(p.category) LIKE %:term%)")
     Page<Product> searchApproved(@Param("term") String term, Pageable pageable);
+
+    // Tìm kiếm theo category có phân trang
+    @Query("SELECT p FROM Product p WHERE p.status = 'APPROVED' AND (:category IS NULL OR LOWER(p.category) = LOWER(:category))")
+    Page<Product> findByCategoryWithPaging(@Param("category") String category, Pageable pageable);
+
+    // Tìm kiếm theo seller có phân trang
+    @Query("SELECT p FROM Product p WHERE p.status = 'APPROVED' AND (:seller IS NULL OR LOWER(p.seller.username) = LOWER(:seller))")
+    Page<Product> findBySellerWithPaging(@Param("seller") String seller, Pageable pageable);
+
+    // Lấy danh sách các category duy nhất
+    @Query("SELECT DISTINCT p.category FROM Product p ORDER BY p.category")
+    List<String> findAllCategories();
+
+    // Lấy danh sách các seller có sản phẩm
+    @Query("SELECT DISTINCT p.seller.username FROM Product p WHERE p.status = 'APPROVED' ORDER BY p.seller.username")
+    List<String> findAllSellers();
 }
