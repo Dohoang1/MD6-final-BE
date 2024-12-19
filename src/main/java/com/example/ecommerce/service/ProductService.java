@@ -29,7 +29,7 @@ public interface ProductService {
     Page<Product> searchApproved(String term, Pageable pageable);
     
     public List<String> getAllCategories();
-    Page<Product> findByCategoryWithPaging(String category, Pageable pageable);
+    Page<Product> findByCategoryWithPaging(String category, String seller, Pageable pageable);
     List<String> getAllSellers();
     Page<Product> findBySellerWithPaging(String seller, Pageable pageable);
 }

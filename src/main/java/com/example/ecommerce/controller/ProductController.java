@@ -249,28 +249,28 @@ public class ProductController {
     @GetMapping("/page")
     public ResponseEntity<Page<Product>> getProductsPage(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String sort,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String seller) {
         try {
+            final int PAGE_SIZE = 6;  // Cố định kích thước trang là 6
             Pageable pageable;
             if (sort != null) {
                 String[] parts = sort.split(",");
                 String sortField = parts[0];
                 Sort.Direction direction = parts.length > 1 && parts[1].equalsIgnoreCase("desc") ?
                         Sort.Direction.DESC : Sort.Direction.ASC;
-                pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+                pageable = PageRequest.of(page, PAGE_SIZE, Sort.by(direction, sortField));
             } else {
-                pageable = PageRequest.of(page, size);
+                pageable = PageRequest.of(page, PAGE_SIZE);
             }
 
             Page<Product> productPage;
             if (search != null && !search.isEmpty()) {
                 productPage = productService.searchApproved(search.toLowerCase(), pageable);
             } else if (category != null && !category.isEmpty()) {
-                productPage = productService.findByCategoryWithPaging(category, pageable);
+                productPage = productService.findByCategoryWithPaging(category, seller, pageable);
             } else if (seller != null && !seller.isEmpty()) {
                 productPage = productService.findBySellerWithPaging(seller, pageable);
             } else {

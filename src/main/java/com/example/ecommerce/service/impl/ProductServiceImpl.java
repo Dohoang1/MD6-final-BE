@@ -104,8 +104,8 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<Product> findByCategoryWithPaging(String category, Pageable pageable) {
-        return productRepository.findByCategoryWithPaging(category, pageable);
+    public Page<Product> findByCategoryWithPaging(String category, String seller, Pageable pageable) {
+        return productRepository.findByCategoryWithPaging(category, seller, pageable);
     }
 
     @Override
