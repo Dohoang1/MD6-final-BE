@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import com.example.ecommerce.model.enums.Role;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 
 @Data
 @Entity
@@ -31,6 +32,12 @@ public class User {
     private Role role = Role.CUSTOMER;
 
     private boolean enabled = true;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Order> orders;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CartItem> cartItems;
 
     public String getUsername() {
         return username;
